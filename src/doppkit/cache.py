@@ -74,7 +74,8 @@ async def cache(args, urls, headers):
     )
     timeout = httpx.Timeout(20.0, connect=40.0)
 
-    async with httpx.AsyncClient(timeout=timeout, limits=limits) as session:
+    # async with httpx.AsyncClient(timeout=timeout, limits=limits) as session:
+    with httpx.Client(timeout=timeout, limits=limits) as session:
 
         text_column = TextColumn('{task.description}', table_column=Column(ratio=1))
         bar_column = BarColumn(bar_width=None, table_column=Column(ratio=2))
@@ -96,8 +97,16 @@ async def cache_url(args, url, headers, session, progress):
     output = None
     logging.info(f"fetching url '{url}'")
     with httpx.stream("GET", url, headers=headers, timeout=None) as response:
+        
+        preserve = {}
+        while response.next_request is not None:
+            if "content-disposition" in response.headers:
+                preserve["content-disposition"] = response.headers["content-disposition"]
+            request = response.next_request
+            response = session.send(request, stream=True)
+        preserve |= response.headers
 
-        c = Content(response.headers, args=args)
+        c = Content(preserve, args=args)
         if args.progress:
             total = None
 
