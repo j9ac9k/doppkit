@@ -3,6 +3,9 @@ import click
 import logging
 import pathlib
 
+from authlib.integrations.httpx_client import AsyncOAuth2Client
+from authlib.common.security import generate_token
+
 from .sync import sync as syncFunction
 from .list import listAOIs as listAOIsFunction
 from .list import listExports as listExportsFunction
@@ -17,7 +20,20 @@ class Application:
         self.progress = False
         self.logging = logging
         self.limit = asyncio.Semaphore(threads)
+        if token is None:
+            token = self.get_token_via_oauth()
 
+    @staticmethod
+    def get_token_via_oauth(self):
+        authorization_endpoint = "https://geoaxis.nga.mil"
+        token_endpoint = 'https://grid.nga.mil/grid/api/authorize'
+        client_id = "DN9x6TjdIlZFmR4lFEG92Lrntz52UWoQ71dAONtK"
+        client = AsyncOAuth2Client(client_id, code_challenge_method='S256')
+        code_verifier = generate_token(48)
+        await uri, state = client.create_authorization_url(authorization_endpoint)
+        print(f"{uri=}")
+        print(f"{state=}")
+        await token = client.fetch_token(..., code_verifier=code_verifier)
 
 @click.group()
 @click.option(
